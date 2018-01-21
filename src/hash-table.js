@@ -1,6 +1,7 @@
 /* eslint-disable no-unused-vars */
 /* eslint-disable class-methods-use-this */
 const { LimitedArray, getIndexBelowMax } = require('./hash-table-helpers');
+const LinkedList = require('./linked-list.js');
 
 class HashTable {
   constructor(limit = 8) {
@@ -15,8 +16,8 @@ class HashTable {
     this.storage = new LimitedArray(this.limit);
     oldStorage.each((bucket) => {
       if (!bucket) return;
-      bucket.forEach((pair) => {
-        this.insert(pair[0], pair[1]);
+      bucket.each((node) => {
+        this.insert(node.value[0], node.value[1]);
       });
     });
   }
@@ -36,10 +37,11 @@ class HashTable {
   insert(key, value) {
     if (this.capacityIsFull()) this.resize();
     const index = getIndexBelowMax(key.toString(), this.limit);
-    let bucket = this.storage.get(index) || [];
+    const bucket = this.storage.get(index) || new LinkedList();
 
-    bucket = bucket.filter(item => item[0] !== key);
-    bucket.push([key, value]);
+    // bucket = bucket.filter(item => item[0] !== key);  // removes duplicates, maybe find a better way to do that with LL
+    bucket.checkForDupes(key, value);
+    bucket.addToTail([key, value]);
     this.storage.set(index, bucket);
   }
   // Removes the key, value pair from the hash table
@@ -50,7 +52,7 @@ class HashTable {
     let bucket = this.storage.get(index);
 
     if (bucket) {
-      bucket = bucket.filter(item => item[0] !== key);
+      bucket = bucket.removeKey(key);
       this.storage.set(index, bucket);
     }
   }
@@ -60,12 +62,11 @@ class HashTable {
   retrieve(key) {
     const index = getIndexBelowMax(key.toString(), this.limit);
     const bucket = this.storage.get(index);
-    let retrieved;
-    if (bucket) {
-      retrieved = bucket.filter(item => item[0] === key)[0];
+    console.log(bucket);
+    if (bucket !== undefined) {
+      return bucket.retrieveValue(key);
     }
-
-    return retrieved ? retrieved[1] : undefined;
+    return;
   }
 }
 
